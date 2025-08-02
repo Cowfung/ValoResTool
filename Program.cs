@@ -123,7 +123,7 @@ string baseConfig = Path.Combine(
     "VALORANT", "Saved", "Config");
 
 string configFolder = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly)
-    .FirstOrDefault(d => File.Exists(Path.Combine(d, "Windows", "GameUserSettings.ini")));
+    .FirstOrDefault(d => File.Exists(Path.Combine(d, "WindowsClient", "GameUserSettings.ini")));
 
 string[] userFolders = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly);
 
@@ -136,7 +136,7 @@ if (userFolders.Length == 0)
 
 foreach (var folder in userFolders)
 {
-    string targetFolder = Path.Combine(folder, "Windows");
+    string targetFolder = Path.Combine(folder, "WindowsClient");
     string configPath = Path.Combine(targetFolder, "GameUserSettings.ini");
 
     if (!Directory.Exists(targetFolder))
