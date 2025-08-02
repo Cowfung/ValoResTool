@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+
+# Publish folder
+publish/
+
+# Others
+*.dbmdl
+*.pdb
+*.cache
+*.log
