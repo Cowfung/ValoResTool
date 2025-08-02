@@ -18,7 +18,6 @@
 
 - Chỉnh độ phân giải 4:3 phổ biến (1400x1080, 1280x960, 1024x768)
 - Tùy chọn tần số quét: 60Hz / 144Hz / 240Hz / 360Hz
-- Tự động sửa file `GameUserSettings.ini` đúng chuẩn
 - Đổi độ phân giải màn hình ngoài game bằng `QRes.exe` tích hợp
 - Giao diện console dễ dùng, tiếng Việt đầy đủ
 
