@@ -168,19 +168,52 @@ else
 }
 
 // Hỏi khôi phục
-Console.WriteLine("\nMệt rồi à? Bấm Y để TRỞ VỀ 1920x1080 (y/n): ");
-Console.Write("> "); // hiện dấu nhắc
-string back = Console.ReadLine().ToLower();
-if (back == "y")
+while (true)
 {
-    Process.Start(new ProcessStartInfo
+    Console.WriteLine("\nĐã hoàn tất. Bạn muốn làm gì tiếp theo?");
+    Console.WriteLine("1 - Vào tài khoản Valorant mới (reset lại config)");
+    Console.WriteLine("2 - Quay về độ phân giải mặc định (1920x1080)");
+    Console.WriteLine("Khác - Thoát");
+    Console.Write("> ");
+    string action = Console.ReadLine().Trim().ToLower();
+
+    if (action == "1")
     {
-        FileName = qresPath,
-        Arguments = "/x:1920 /y:1080",
-        UseShellExecute = false
-    })?.WaitForExit();
-    Console.WriteLine("✅ Đã khôi phục độ phân giải về mặc định.");
+        string[] newUserFolders = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly);
+        if (newUserFolders.Length == 0)
+        {
+            Console.WriteLine("❌ Không tìm thấy thư mục tài khoản Valorant.");
+        }
+        else
+        {
+            foreach (var folder in newUserFolders)
+            {
+                string targetFolder = Path.Combine(folder, "WindowsClient");
+                string configPath = Path.Combine(targetFolder, "GameUserSettings.ini");
+
+                if (!Directory.Exists(targetFolder))
+                {
+                    Directory.CreateDirectory(targetFolder);
+                }
+
+                File.WriteAllLines(configPath, modified, Encoding.UTF8);
+                Console.WriteLine($"✅ Đã cập nhật: {configPath}");
+            }
+        }
+
+        // Sau khi chọn 1 xong, vòng lặp sẽ tiếp tục lặp lại
+    }
+    else if (action == "2")
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = qresPath,
+            Arguments = "/x:1920 /y:1080",
+            UseShellExecute = false
+        })?.WaitForExit();
+        Console.WriteLine("✅ Đã khôi phục độ phân giải về mặc định.");
+        Environment.Exit(0); // Thoát luôn, không hiện "Nhấn phím bất kỳ"
+    }
+  
 }
 
-Console.WriteLine("\nHoàn tất. Nhấn phím bất kỳ để thoát.");
-Console.ReadKey();
