@@ -30,25 +30,69 @@ var resolutionService = new ResolutionService(qresPath);
 string baseConfig = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "VALORANT", "Saved", "Config");
-while (true)
+
+bool running = true;
+
+ConsoleHelper.PreventClose(() =>
 {
+    Console.WriteLine("👋 Tool đã thoát.");
+    running = false;
+});
+
+AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+{
+    running = false;
+};
 
 
-    // 🔹 Bước 1: Check Riot Client
+while (running && !Environment.HasShutdownStarted)
+{
     string riotExe = riotService.GetRiotClientExe();
-
-    Console.WriteLine(riotExe ?? "Không tìm thấy Riot Client");
     if (riotExe != null)
     {
-        Console.WriteLine($"👉 Đang thử mở Riot Client từ: {riotExe}");
         try
         {
-            Process.Start(riotExe);
-            Console.WriteLine("✅ Riot Client đã được mở.");
+            string[] riotProcesses =
+            {
+            "RiotClientServices",
+            "RiotClientUx",
+            "RiotClientUxRender",
+            "RiotClientElectron"
+        };
 
-            string subject = await riotService.EnsureValorantAccountAsync(baseConfig);
-            Console.WriteLine("🎉 Riot Client đã login & tài khoản Valorant đã sẵn sàng!");
+            bool riotRunning = riotProcesses.Any(p => Process.GetProcessesByName(p).Any());
 
+            if (!riotRunning)
+            {
+                // Riot Client chưa chạy → mở mới
+                Process.Start(riotExe);
+                Console.WriteLine("✅ Riot Client đã được mở.");
+            }
+            else
+            {
+                // Riot Client đang chạy → thử login
+                var loginInfo = await riotService.CheckRiotLoginAsync();
+                if (loginInfo == null)
+                {
+                    Console.WriteLine("⚠ Riot Client chạy nhưng chưa login, sẽ khởi động lại...");
+
+                    // Kill toàn bộ process Riot Client
+                    foreach (var p in riotProcesses)
+                    {
+                        foreach (var proc in Process.GetProcessesByName(p))
+                            proc.Kill();
+                    }
+
+                    await Task.Delay(2000); // chờ nó tắt hẳn
+
+                    Process.Start(riotExe);
+                    Console.WriteLine("🔄 Đã khởi động lại Riot Client.");
+                }
+                else
+                {
+                    Console.WriteLine("⚠ Riot Client đã chạy & login sẵn, bỏ qua mở lại.");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -59,9 +103,8 @@ while (true)
     {
         Console.WriteLine("❌ Không tìm thấy Riot Client.");
     }
-
-
-
+    string subject = await riotService.EnsureValorantAccountAsync(baseConfig);
+    Console.WriteLine("🎉 Riot Client đã login & tài khoản Valorant đã sẵn sàng!");
     // Chọn độ phân giải
     // 🔹 Bước 2: Người dùng chọn độ phân giải
     (int resX, int resY) = MenuHelper.ChooseResolution();
@@ -129,8 +172,6 @@ while (true)
     resX,
     resY
     );
-    Console.TreatControlCAsInput = false;
-    Console.CancelKeyPress += (s, e) => Environment.Exit(0);
-    AppDomain.CurrentDomain.ProcessExit += (s, e) => Environment.Exit(0);
+   
 }
 
