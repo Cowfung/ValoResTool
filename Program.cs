@@ -129,4 +129,8 @@ while (true)
     resX,
     resY
     );
+    Console.TreatControlCAsInput = false;
+    Console.CancelKeyPress += (s, e) => Environment.Exit(0);
+    AppDomain.CurrentDomain.ProcessExit += (s, e) => Environment.Exit(0);
 }
+
