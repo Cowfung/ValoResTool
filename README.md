@@ -1,10 +1,5 @@
 # 🛠️ CÔNG CỤ CHỈNH MÀN HÌNH VALORANT 4:3
-  
-- Game **PHẢI** được mở ít nhất **1 lần** cho mỗi tài khoản mới.  
-- Nếu **Alt+Tab** hoặc bị lỗi hình ảnh → Thoát game rồi chạy lại tool.  
-> 📌 Nếu ko thoát được bị treo thì có thoát bằng taskmanager hoặc dùng cmd 
-- taskkill /IM VALORANT-Win64-Shipping.exe /f
----
+
 
 ## 🔽 TẢI VỀ
 
