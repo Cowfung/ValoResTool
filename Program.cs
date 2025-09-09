@@ -1,219 +1,132 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using ValoResTool.Properties;
-
-// 🔧 Trích xuất file từ resource
-string tempDir = Path.Combine(Path.GetTempPath(), "CowfungValoTool");
-Directory.CreateDirectory(tempDir);
-
-string qresPath = Path.Combine(tempDir, "QRes.exe");
-string iniTemplatePath = Path.Combine(tempDir, "GameUserSettings.ini");
-
-
-File.WriteAllBytes(qresPath, Resources.QRes); // QRes.exe dạng byte[]
-File.WriteAllBytes(iniTemplatePath, Resources.GameUserSettings); // GameUserSettings.ini cũng byte[]
-
-
+using ValoResTool.Services;
 Console.OutputEncoding = Encoding.UTF8;
 
 Console.WriteLine("==========================================");
 Console.WriteLine("  CÔNG CỤ CHỈNH MÀN HÌNH VALORANT 4:3");
 Console.WriteLine("==========================================");
-Console.WriteLine("- Game PHẢI được mở ít nhất 1 lần cho mỗi tài khoản mới.");
-Console.WriteLine("- Nếu alt-tab hoặc lỗi hình ảnh → Thoát game + chạy lại tool.");
 Console.WriteLine();
 
-// Mở Facebook & Youtube
-Console.Write("Bạn có muốn mở Facebook & YouTube? (y/n): ");
-string openWeb = Console.ReadLine().Trim().ToLower();
-if (openWeb == "y")
-{
-    string[] browsers = {
-                @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-                @"C:\Program Files\CocCoc\Browser\Application\browser.exe",
-                @"C:\Program Files (x86)\CocCoc\Browser\Application\browser.exe"
-            };
 
-    string browserPath = browsers.FirstOrDefault(File.Exists);
-    if (browserPath != null)
-    {
-        Process.Start(browserPath, "https://facebook.com https://youtube.com");
-    }
-    else
-    {
-        Console.WriteLine("Không tìm thấy Chrome hoặc Cốc Cốc.");
-    }
-}
 
-// Chọn độ phân giải
-Console.WriteLine("\nChọn độ phân giải 4:3:");
-Console.WriteLine("1 - 1400 x 1080");
-Console.WriteLine("2 - 1280 x 960");
-Console.WriteLine("3 - 1024 x 768");
-Console.Write("Nhập số bạn chọn (1/2/3): ");
-string resChoice = Console.ReadLine();
-int resX = 1400, resY = 1080;
+// 🔧 Trích xuất file từ resource
+string tempDir = Path.Combine(Path.GetTempPath(), "CowfungValoTool");
+Directory.CreateDirectory(tempDir);
+string qresPath = Path.Combine(tempDir, "QRes.exe");
+string iniTemplatePath = Path.Combine(tempDir, "GameUserSettings.ini");
 
-switch (resChoice)
-{
-    case "1": resX = 1400; resY = 1080; break;
-    case "2": resX = 1280; resY = 960; break;
-    case "3": resX = 1024; resY = 768; break;
-    default:
-        Console.WriteLine("Lựa chọn không hợp lệ!");
-        Console.ReadKey(); return;
-}
+// Ghi file resource ra ổ tạm
+File.WriteAllBytes(qresPath, Resources.QRes); // QRes.exe dạng byte[]
+File.WriteAllBytes(iniTemplatePath, Resources.GameUserSettings); // GameUserSettings.ini cũng byte[]
 
-// Chọn Hz
-Console.WriteLine("\nChọn tần số quét:");
-Console.WriteLine("1 - 60Hz");
-Console.WriteLine("2 - 144Hz");
-Console.WriteLine("3 - 240Hz");
-Console.WriteLine("4 - 360Hz");
-Console.Write("Nhập số bạn chọn (1/2/3/4): ");
-string hzChoice = Console.ReadLine();
-int hz = 60;
-if (hzChoice == "2") hz = 144;
-else if (hzChoice == "3") hz = 240;
-else if (hzChoice == "4") hz = 360;
+// Sau khi có qresPath mới tạo service
+var riotService = new RiotService();
+var configService = new ConfigService();
+var resolutionService = new ResolutionService(qresPath);
 
-// Tìm file GameUserSettings.ini gốc
-string templatePath = iniTemplatePath;
-if (!File.Exists(templatePath))
-{
-    Console.WriteLine("Không tìm thấy GameUserSettings.ini mẫu.");
-    Console.ReadKey(); return;
-}
-
-// Đọc và sửa config
-var lines = File.ReadAllLines(templatePath);
-bool inSection = false;
-var modified = new List<string>();
-
-foreach (var raw in lines)
-{
-    string line = raw;
-    if (line == "[/Script/ShooterGame.ShooterGameUserSettings]") inSection = true;
-    else if (line.StartsWith("[") && line != "[/Script/ShooterGame.ShooterGameUserSettings]") inSection = false;
-
-    if (inSection)
-    {
-        if (line.StartsWith("ResolutionSizeX=")) line = $"ResolutionSizeX={resX}";
-        else if (line.StartsWith("ResolutionSizeY=")) line = $"ResolutionSizeY={resY}";
-        else if (line.StartsWith("LastUserConfirmedResolutionSizeX=")) line = $"LastUserConfirmedResolutionSizeX={resX}";
-        else if (line.StartsWith("LastUserConfirmedResolutionSizeY=")) line = $"LastUserConfirmedResolutionSizeY={resY}";
-        else if (line.StartsWith("bShouldLetterbox=")) line = $"bShouldLetterbox=False";
-        else if (line.StartsWith("bLastConfirmedShouldLetterbox=")) line = $"bLastConfirmedShouldLetterbox=False";
-        else if (line.StartsWith("LastConfirmedFullscreenMode=")) line = $"LastConfirmedFullscreenMode=2";
-        else if (line.StartsWith("HDRDisplayOutputNits="))
-        {
-            modified.Add(line);
-            modified.Add("Fullscreenmode=2");
-            continue;
-        }
-    }
-
-    modified.Add(line);
-}
-
-// Tìm thư mục Valorant config thực sự
+// Biến dùng chung
 string baseConfig = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "VALORANT", "Saved", "Config");
-
-string configFolder = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly)
-    .FirstOrDefault(d => File.Exists(Path.Combine(d, "WindowsClient", "GameUserSettings.ini")));
-
-string[] userFolders = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly);
-
-if (userFolders.Length == 0)
-{
-    Console.WriteLine("❌ Không tìm thấy thư mục tài khoản Valorant.");
-    Console.ReadKey();
-    return;
-}
-
-foreach (var folder in userFolders)
-{
-    string targetFolder = Path.Combine(folder, "WindowsClient");
-    string configPath = Path.Combine(targetFolder, "GameUserSettings.ini");
-
-    if (!Directory.Exists(targetFolder))
-    {
-        Directory.CreateDirectory(targetFolder);
-    }
-
-    File.WriteAllLines(configPath, modified, Encoding.UTF8);
-    Console.WriteLine($"✅ Đã cập nhật: {configPath}");
-}
-
-
-// Gọi QRes
-
-if (File.Exists(qresPath))
-{
-    var proc = new ProcessStartInfo
-    {
-        FileName = qresPath,
-        Arguments = $"/x:{resX} /y:{resY} /r:{hz}",
-        UseShellExecute = false
-    };
-    Process.Start(proc)?.WaitForExit();
-    Console.WriteLine($"✅ Đã đổi độ phân giải sang {resX}x{resY} @{hz}Hz.");
-}
-else
-{
-    Console.WriteLine("Không tìm thấy QRes.exe.");
-}
-
-// Hỏi khôi phục
 while (true)
 {
-    Console.WriteLine("\nĐã hoàn tất. Bạn muốn làm gì tiếp theo?");
-    Console.WriteLine("1 - Vào tài khoản Valorant mới (reset lại config)");
-    Console.WriteLine("2 - Quay về độ phân giải mặc định (1920x1080)");
-    Console.WriteLine("Khác - Thoát");
-    Console.Write("> ");
-    string action = Console.ReadLine().Trim().ToLower();
 
-    if (action == "1")
+
+    // 🔹 Bước 1: Check Riot Client
+    string riotExe = riotService.GetRiotClientExe();
+
+    Console.WriteLine(riotExe ?? "Không tìm thấy Riot Client");
+    if (riotExe != null)
     {
-        string[] newUserFolders = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly);
-        if (newUserFolders.Length == 0)
+        Console.WriteLine($"👉 Đang thử mở Riot Client từ: {riotExe}");
+        try
         {
-            Console.WriteLine("❌ Không tìm thấy thư mục tài khoản Valorant.");
+            Process.Start(riotExe);
+            Console.WriteLine("✅ Riot Client đã được mở.");
+
+            string subject = await riotService.EnsureValorantAccountAsync(baseConfig);
+            Console.WriteLine("🎉 Riot Client đã login & tài khoản Valorant đã sẵn sàng!");
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Lỗi khi mở Riot Client: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("❌ Không tìm thấy Riot Client.");
+    }
+
+
+
+    // Chọn độ phân giải
+    // 🔹 Bước 2: Người dùng chọn độ phân giải
+    (int resX, int resY) = MenuHelper.ChooseResolution();
+    int hz = MenuHelper.ChooseHz();
+   
+    // Tìm file GameUserSettings.ini gốc
+    string templatePath = iniTemplatePath;
+    if (!File.Exists(templatePath))
+    {
+        Console.WriteLine("Không tìm thấy GameUserSettings.ini mẫu.");
+        Console.ReadKey(); return;
+    }
+
+   
+
+    string configFolder = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly)
+        .FirstOrDefault(d => File.Exists(Path.Combine(d, "WindowsClient", "GameUserSettings.ini")));
+
+    string[] userFolders = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly);
+    configService.UpdateConfig(iniTemplatePath, userFolders, resX, resY);
+
+    if (userFolders.Length == 0)
+    {
+        Console.WriteLine("❌ Không tìm thấy thư mục tài khoản Valorant.");
+        Console.ReadKey();
+        return;
+    }
+
+
+    // Gọi QRes
+
+    if (File.Exists(qresPath))
+    {
+        var proc = new ProcessStartInfo
+        {
+            FileName = qresPath,
+            Arguments = $"/x:{resX} /y:{resY} /r:{hz}",
+            UseShellExecute = false
+        };
+        Process.Start(proc)?.WaitForExit();
+        Console.WriteLine($"✅ Đã đổi độ phân giải sang {resX}x{resY} @{hz}Hz.");
+        var loginInfo = await riotService.CheckRiotLoginAsync(); // Lấy lại thông tin login để có appPort + token
+        if (loginInfo != null)
+        {
+            await riotService.LaunchValorantAsync(loginInfo.AppPort, loginInfo.RemotingAuthToken);
         }
         else
         {
-            foreach (var folder in newUserFolders)
-            {
-                string targetFolder = Path.Combine(folder, "WindowsClient");
-                string configPath = Path.Combine(targetFolder, "GameUserSettings.ini");
-
-                if (!Directory.Exists(targetFolder))
-                {
-                    Directory.CreateDirectory(targetFolder);
-                }
-
-                File.WriteAllLines(configPath, modified, Encoding.UTF8);
-                Console.WriteLine($"✅ Đã cập nhật: {configPath}");
-            }
+            Console.WriteLine("❌ Không thể lấy thông tin login Riot Client, vui lòng mở Riot Client và đăng nhập.");
         }
 
-        // Sau khi chọn 1 xong, vòng lặp sẽ tiếp tục lặp lại
     }
-    else if (action == "2")
+    else
     {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = qresPath,
-            Arguments = "/x:1920 /y:1080",
-            UseShellExecute = false
-        })?.WaitForExit();
-        Console.WriteLine("✅ Đã khôi phục độ phân giải về mặc định.");
-        Environment.Exit(0); // Thoát luôn, không hiện "Nhấn phím bất kỳ"
+        Console.WriteLine("Không tìm thấy QRes.exe.");
     }
-  
-}
 
+    MenuHelper.ShowActionMenu(
+    userFolders,
+    riotExe,
+    riotService,
+    resolutionService,
+    configService,
+    iniTemplatePath,
+    resX,
+    resY
+    );
+}
