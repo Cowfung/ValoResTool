@@ -36,10 +36,22 @@ namespace ValoResTool.Services
                     else if (line.StartsWith("bShouldLetterbox=")) line = "bShouldLetterbox=False";
                     else if (line.StartsWith("bLastConfirmedShouldLetterbox=")) line = "bLastConfirmedShouldLetterbox=False";
                     else if (line.StartsWith("LastConfirmedFullscreenMode=")) line = "LastConfirmedFullscreenMode=2";
+                    else if (line.StartsWith("HDRDisplayOutputNits="))
+                    
+                        {
+                        modified.Add(line);
+                        // Ngay sau đó thêm Fullscreenmode=2
+                        modified.Add("Fullscreenmode=2");
+                        continue; // bỏ qua modified.Add(line) ở cuối
+                    }
+                    
                 }
 
                 modified.Add(line);
+                
+              
             }
+            modified.Add("Fullscreenmode=2");
 
             foreach (var folder in accountFolders)
             {

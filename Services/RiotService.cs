@@ -13,22 +13,75 @@ namespace ValoResTool.Services
 {
     public class RiotService
     {
-       public string GetRiotClientExe()
+        public string? GetRiotClientExe()
         {
+            // 1. Thử registry key chuẩn
             using (RegistryKey key = Registry.ClassesRoot.OpenSubKey(@"riotclient\shell\open\command"))
             {
                 if (key != null)
                 {
-                    string value = key.GetValue(null) as string; // (Default)
+                    string value = key.GetValue(null) as string;
                     if (!string.IsNullOrEmpty(value))
                     {
-                        // value dạng: "D:\Riot Games\Riot Client\RiotClientServices.exe" --launch-uri="%1"
-                        string exePath = value.Split('"')[1]; // lấy phần trong dấu "
+                        string exePath = value.Split('"')[1];
                         if (File.Exists(exePath))
                             return exePath;
                     }
                 }
             }
+
+            // 2. Thử các path phổ biến
+            string[] commonPaths =
+            {
+        @"C:\Riot Games\Riot Client\RiotClientServices.exe",
+        @"C:\Riot\RiotClient\RiotClientServices.exe",
+        @"C:\ProgramData\Riot Games\RiotClientServices.exe"
+    };
+
+            foreach (var path in commonPaths)
+            {
+                if (File.Exists(path))
+                    return path;
+            }
+
+            // 3. Quét Registry LocalServer32
+            using (var clsidRoot = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\CLSID"))
+            {
+                if (clsidRoot != null)
+                {
+                    foreach (var subKeyName in clsidRoot.GetSubKeyNames())
+                    {
+                        try
+                        {
+                            using (var subKey = clsidRoot.OpenSubKey(subKeyName + @"\LocalServer32"))
+                            {
+                                var value = subKey?.GetValue(null) as string;
+                                if (!string.IsNullOrEmpty(value) &&
+                                    value.Contains("RiotClientServices.exe", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string exePath = value.Trim().Trim('"');
+                                    if (File.Exists(exePath))
+                                        return exePath;
+                                }
+                            }
+                        }
+                        catch { /* ignore quyền lỗi */ }
+                    }
+                }
+            }
+
+            // 4. Fallback cuối: quét ổ C (hạn chế thư mục để nhanh hơn)
+            string[] searchRoots = { @"C:\Riot", @"C:\Program Files", @"C:\Program Files (x86)", @"C:\ProgramData" };
+            foreach (var root in searchRoots)
+            {
+                if (Directory.Exists(root))
+                {
+                    var files = Directory.GetFiles(root, "RiotClientServices.exe", SearchOption.AllDirectories);
+                    if (files.Length > 0)
+                        return files[0];
+                }
+            }
+
             return null;
         }
         // 🔹 Lấy thông tin Riot Client từ log
