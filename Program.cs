@@ -8,18 +8,20 @@ Console.WriteLine("==========================================");
 Console.WriteLine("  CÔNG CỤ CHỈNH MÀN HÌNH VALORANT 4:3");
 Console.WriteLine("==========================================");
 Console.WriteLine();
-
-
-
+ScalingService.SetScalingConfig();
+ScalingService.SetScalingFullScreen();
+GpuService.ResetGpu();
 // 🔧 Trích xuất file từ resource
 string tempDir = Path.Combine(Path.GetTempPath(), "CowfungValoTool");
 Directory.CreateDirectory(tempDir);
 string qresPath = Path.Combine(tempDir, "QRes.exe");
 string iniTemplatePath = Path.Combine(tempDir, "GameUserSettings.ini");
 
+
 // Ghi file resource ra ổ tạm
 File.WriteAllBytes(qresPath, Resources.QRes); // QRes.exe dạng byte[]
 File.WriteAllBytes(iniTemplatePath, Resources.GameUserSettings); // GameUserSettings.ini cũng byte[]
+
 
 // Sau khi có qresPath mới tạo service
 var riotService = new RiotService();
@@ -47,7 +49,14 @@ AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 
 while (running && !Environment.HasShutdownStarted)
 {
-    string riotExe = riotService.GetRiotClientExe();
+    string? riotExe = riotService.GetRiotClientExe();
+    if (riotExe == null)
+    {
+        Console.WriteLine("❌ Riot Client chưa được mở lần nào. Vui lòng mở Riot Client ít nhất 1 lần rồi thử lại.");
+        Console.WriteLine("Nhấn Enter sau khi đã mở Riot Client...");
+        Console.ReadLine(); // chờ người dùng mở Riot Client
+        continue; // quay lại vòng lặp, khi mở xong Registry sẽ có
+    }
     if (riotExe != null)
     {
         try
@@ -109,7 +118,7 @@ while (running && !Environment.HasShutdownStarted)
     // 🔹 Bước 2: Người dùng chọn độ phân giải
     (int resX, int resY) = MenuHelper.ChooseResolution();
     int hz = MenuHelper.ChooseHz();
-   
+
     // Tìm file GameUserSettings.ini gốc
     string templatePath = iniTemplatePath;
     if (!File.Exists(templatePath))
@@ -118,7 +127,7 @@ while (running && !Environment.HasShutdownStarted)
         Console.ReadKey(); return;
     }
 
-   
+
 
     string configFolder = Directory.GetDirectories(baseConfig, "*-ap", SearchOption.TopDirectoryOnly)
         .FirstOrDefault(d => File.Exists(Path.Combine(d, "WindowsClient", "GameUserSettings.ini")));
@@ -172,6 +181,6 @@ while (running && !Environment.HasShutdownStarted)
     resX,
     resY
     );
-   
+
 }
 

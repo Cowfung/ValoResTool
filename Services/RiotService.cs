@@ -70,18 +70,7 @@ namespace ValoResTool.Services
                 }
             }
 
-            // 4. Fallback cuối: quét ổ C (hạn chế thư mục để nhanh hơn)
-            string[] searchRoots = { @"C:\Riot", @"C:\Program Files", @"C:\Program Files (x86)", @"C:\ProgramData" };
-            foreach (var root in searchRoots)
-            {
-                if (Directory.Exists(root))
-                {
-                    var files = Directory.GetFiles(root, "RiotClientServices.exe", SearchOption.AllDirectories);
-                    if (files.Length > 0)
-                        return files[0];
-                }
-            }
-
+           
             return null;
         }
         // 🔹 Lấy thông tin Riot Client từ log

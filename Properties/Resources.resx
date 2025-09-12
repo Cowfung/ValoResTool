@@ -118,8 +118,14 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="devcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\devcon.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="GameUserSettings" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\GameUserSettings.ini;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="PsExec" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PsExec.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="QRes" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\QRes.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
