@@ -8,9 +8,13 @@ Console.WriteLine("==========================================");
 Console.WriteLine("  CÔNG CỤ CHỈNH MÀN HÌNH VALORANT 4:3");
 Console.WriteLine("==========================================");
 Console.WriteLine();
-ScalingService.SetScalingConfig();
-ScalingService.SetScalingFullScreen();
-GpuService.ResetGpu();
+
+bool didChange = ScalingService.SetScalingFullScreen();
+bool didFullScreen = ScalingService.SetScalingConfig();
+if (didChange || didFullScreen)
+{
+    GpuService.ResetGpu();
+}
 // 🔧 Trích xuất file từ resource
 string tempDir = Path.Combine(Path.GetTempPath(), "CowfungValoTool");
 Directory.CreateDirectory(tempDir);

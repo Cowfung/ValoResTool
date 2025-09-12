@@ -18,7 +18,7 @@ namespace ValoResTool.Services
 
                 _psexecPath = Path.Combine(tempDir, "PsExec.exe");
                 File.WriteAllBytes(_psexecPath, Resources.PsExec);
-                Console.WriteLine($"PsExec extracted to: {_psexecPath}");
+                
             }
         }
 

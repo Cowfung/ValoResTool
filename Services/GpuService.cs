@@ -20,7 +20,7 @@ namespace ValoResTool.Services
             Directory.CreateDirectory(tempDir);
 
             string devconPath = Path.Combine(tempDir, "devcon.exe");
-            Console.WriteLine($"DevCon extracted to: {devconPath}");
+          
             File.WriteAllBytes(devconPath, Resources.devcon); // resource byte[]
 
             return devconPath;
