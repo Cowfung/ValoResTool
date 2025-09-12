@@ -19,7 +19,7 @@ namespace ValoResTool.Services
             try
             {
                 PsExecService.RunAsSystem(cmd);
-                Console.WriteLine("✅ ScalingConfig đã set thành Fullscreen thành công!");
+                Console.WriteLine("✅ ScalingConfig đã set thành thành công!");
             }
             catch (Exception ex)
             {
@@ -71,7 +71,7 @@ namespace ValoResTool.Services
                         }
                     }
                 }
-                Console.WriteLine("✅ ScalingMode đã được set thành Fullscreen thành công!");
+                Console.WriteLine("✅ ScalingMode đã được set  thành công!");
 
 
             }
