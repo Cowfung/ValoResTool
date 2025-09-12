@@ -4,7 +4,8 @@
 ## 🔽 TẢI VỀ
 
 👉 [ValoResTool.exe](https://github.com/Cowfung/ValoResTool/releases/download/valorant/ValoResTool.exe)
-
+👉 [ValoResToolv2.exe](https://github.com/Cowfung/ValoResTool/releases/download/valorantv2/ValoResTool.exe)
+bản 2 là bản cải tiến dành cho người lười và dùng Nvidia
 
 
 ---
