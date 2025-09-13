@@ -83,16 +83,6 @@ namespace ValoResTool.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        public static byte[] PsExec {
-            get {
-                object obj = ResourceManager.GetObject("PsExec", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
         public static byte[] QRes {
             get {
                 object obj = ResourceManager.GetObject("QRes", resourceCulture);
