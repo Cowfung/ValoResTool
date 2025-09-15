@@ -15,64 +15,35 @@ namespace ValoResTool.Services
     {
         public string? GetRiotClientExe()
         {
-            // 1. Thử registry key chuẩn
-            using (RegistryKey key = Registry.ClassesRoot.OpenSubKey(@"riotclient\shell\open\command"))
+            // 1. Quét AppCompatFlags (Windows Compatibility Assistant history)
+            using (var storeKey = Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store"))
             {
-                if (key != null)
+                if (storeKey != null)
                 {
-                    string value = key.GetValue(null) as string;
-                    if (!string.IsNullOrEmpty(value))
+                    foreach (var valueName in storeKey.GetValueNames())
                     {
-                        string exePath = value.Split('"')[1];
-                        if (File.Exists(exePath))
-                            return exePath;
-                    }
-                }
-            }
-
-            // 2. Thử các path phổ biến
-            string[] commonPaths =
-            {
-        @"C:\Riot Games\Riot Client\RiotClientServices.exe",
-        @"C:\Riot\RiotClient\RiotClientServices.exe",
-        @"C:\ProgramData\Riot Games\RiotClientServices.exe"
-    };
-
-            foreach (var path in commonPaths)
-            {
-                if (File.Exists(path))
-                    return path;
-            }
-
-            // 3. Quét Registry LocalServer32
-            using (var clsidRoot = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\CLSID"))
-            {
-                if (clsidRoot != null)
-                {
-                    foreach (var subKeyName in clsidRoot.GetSubKeyNames())
-                    {
-                        try
+                        if (valueName.EndsWith("RiotClientServices.exe", StringComparison.OrdinalIgnoreCase) &&
+                            File.Exists(valueName))
                         {
-                            using (var subKey = clsidRoot.OpenSubKey(subKeyName + @"\LocalServer32"))
-                            {
-                                var value = subKey?.GetValue(null) as string;
-                                if (!string.IsNullOrEmpty(value) &&
-                                    value.Contains("RiotClientServices.exe", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string exePath = value.Trim().Trim('"');
-                                    if (File.Exists(exePath))
-                                        return exePath;
-                                }
-                            }
+                            return valueName; // valueName chính là full path exe
                         }
-                        catch { /* ignore quyền lỗi */ }
                     }
                 }
             }
+            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\MyTool"))
+            {
+                var savedPath = key?.GetValue("RiotExePath") as string;
+                if (!string.IsNullOrEmpty(savedPath) && File.Exists(savedPath))
+                {
+                    return savedPath;
+                }
+            }
 
-           
+
             return null;
         }
+
         // 🔹 Lấy thông tin Riot Client từ log
         public async Task<(int AppPort, string Token)?> GetRiotClientInfoAsync(int maxRetry = 10)
         {
@@ -130,6 +101,7 @@ namespace ValoResTool.Services
                         AppPort = info.Value.AppPort,
                         RemotingAuthToken = info.Value.Token
                     };
+  
                 }
             }
             catch { /* lỗi connect -> chưa login */ }
@@ -190,6 +162,7 @@ namespace ValoResTool.Services
             while (loginInfo == null)
             {
                 loginInfo = await CheckRiotLoginAsync();
+               
                 if (loginInfo == null)
                 {
                     Console.WriteLine("⏳ Chưa login Riot Client, thử lại sau 10s...");

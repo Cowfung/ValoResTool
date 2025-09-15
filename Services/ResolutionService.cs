@@ -16,23 +16,40 @@ namespace ValoResTool.Services
             _qresPath = qresPath;
         }
 
-        public void SetResolution(int width, int height, int hz)
+        public bool SetResolution(int width, int height, int hz)
         {
             if (!File.Exists(_qresPath))
             {
                 Console.WriteLine("❌ Không tìm thấy QRes.exe.");
-                return;
+                return false;
             }
 
             var proc = new ProcessStartInfo
             {
                 FileName = _qresPath,
                 Arguments = $"/x:{width} /y:{height} /r:{hz}",
-                UseShellExecute = false
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
 
-            Process.Start(proc)?.WaitForExit();
-            Console.WriteLine($"✅ Đã đổi độ phân giải sang {width}x{height} @{hz}Hz.");
+            using (var process = Process.Start(proc))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (output.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
+                    error.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("❌ Độ phân giải / tần số quét không được hỗ trợ, vui lòng chọn lại.");
+                    return false;
+                }
+
+                Console.WriteLine($"✅ Đã đổi độ phân giải sang {width}x{height} @{hz}Hz.");
+                return true;
+            }
         }
 
         public void RestoreDefault()
