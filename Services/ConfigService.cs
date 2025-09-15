@@ -51,7 +51,7 @@ namespace ValoResTool.Services
                 
               
             }
-            modified.Add("Fullscreenmode=2");
+           
 
             foreach (var folder in accountFolders)
             {
