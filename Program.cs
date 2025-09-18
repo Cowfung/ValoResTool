@@ -193,6 +193,8 @@ while (running && !Environment.HasShutdownStarted)
   
     string subject = await riotService.EnsureValorantAccountAsync(baseConfig);
     Console.WriteLine("🎉 Riot Client đã login & tài khoản Valorant đã sẵn sàng!");
+    Task.Delay(3000);
+    ConsoleHelper.BringConsoleToFront();
     // Chọn độ phân giải
     // 🔹 Bước 2: Người dùng chọn độ phân giải
     bool success = false;
@@ -234,16 +236,10 @@ while (running && !Environment.HasShutdownStarted)
     }
     else
     {
-        // 🔄 Thử check lại lần nữa sau khi đổi độ phân giải
-        loginInfo = await riotService.CheckRiotLoginAsync();
-        if (loginInfo != null)
-        {
-            await riotService.LaunchValorantAsync(loginInfo.AppPort, loginInfo.RemotingAuthToken);
-        }
-        else
-        {
+      
+      
             Console.WriteLine("❌ Không thể lấy thông tin login Riot Client, vui lòng mở Riot Client và đăng nhập.");
-        }
+        
     }
 
 
