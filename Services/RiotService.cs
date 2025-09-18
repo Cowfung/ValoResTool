@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -15,7 +16,20 @@ namespace ValoResTool.Services
     {
         public string? GetRiotClientExe()
         {
-            // 1. Quét AppCompatFlags (Windows Compatibility Assistant history)
+            // Ưu tiên 1: RiotClientInstalls.json
+            string jsonPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                           "Riot Games", "RiotClientInstalls.json");
+            if (File.Exists(jsonPath))
+            {
+                var doc = JsonDocument.Parse(File.ReadAllText(jsonPath));
+                if (doc.RootElement.TryGetProperty("rc_default", out var pathProp))
+                {
+                    string? exePath = pathProp.GetString();
+                    if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+                        return exePath;
+                }
+            }
+
             using (var storeKey = Registry.CurrentUser.OpenSubKey(
                 @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store"))
             {
@@ -89,9 +103,12 @@ namespace ValoResTool.Services
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authValue);
 
                 var response = await client.GetAsync($"https://127.0.0.1:{info.Value.AppPort}/rso-auth/v1/authorization");
-                if (!response.IsSuccessStatusCode) return null;
-
                 string content = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+
                 var doc = JsonDocument.Parse(content);
                 if (doc.RootElement.TryGetProperty("subject", out var subjectProp))
                 {
@@ -101,7 +118,7 @@ namespace ValoResTool.Services
                         AppPort = info.Value.AppPort,
                         RemotingAuthToken = info.Value.Token
                     };
-  
+
                 }
             }
             catch { /* lỗi connect -> chưa login */ }
@@ -158,20 +175,25 @@ namespace ValoResTool.Services
         }
         public async Task<string> EnsureValorantAccountAsync(string baseConfig)
         {
+            // Trước khi check login
+            EnsureRiotClientFullUI();
             RiotLoginInfo? loginInfo = null;
             while (loginInfo == null)
             {
                 loginInfo = await CheckRiotLoginAsync();
-               
+
                 if (loginInfo == null)
                 {
                     Console.WriteLine("⏳ Chưa login Riot Client, thử lại sau 10s...");
                     await Task.Delay(10000); // thay vì chờ người dùng bấm Enter
                 }
+
             }
             string subject = loginInfo.Subject;
 
+
             string subjectFolder = Path.Combine(baseConfig, $"{subject}-ap", "WindowsClient");
+
 
             if (!Directory.Exists(subjectFolder))
             {
@@ -195,6 +217,33 @@ namespace ValoResTool.Services
 
             return subject;
         }
+        private void EnsureRiotClientFullUI()
+        {
+            var exePath = GetRiotClientExe();
+            if (exePath == null)
+            {
+                Console.WriteLine("❌ Không tìm thấy RiotClientServices.exe");
+                return;
+            }
+
+            // Nếu đang chạy ở bootstrap mode thì kill trước
+            foreach (var p in Process.GetProcessesByName("RiotClientServices"))
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
+
+            Console.WriteLine("⚡ Đang khởi động Riot Client với UI đầy đủ...");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = "", // để trống = bật launcher UI thay vì bootstrap
+                UseShellExecute = true
+            });
+
+            Thread.Sleep(5000);
+        }
+
 
     }
 }
