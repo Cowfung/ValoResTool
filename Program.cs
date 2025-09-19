@@ -236,10 +236,17 @@ while (running && !Environment.HasShutdownStarted)
     }
     else
     {
-      
-      
+
+        loginInfo = await riotService.CheckRiotLoginAsync();
+        if (loginInfo != null)
+        {
+            await riotService.LaunchValorantAsync(loginInfo.AppPort, loginInfo.RemotingAuthToken);
+        }
+        else
+        {
             Console.WriteLine("❌ Không thể lấy thông tin login Riot Client, vui lòng mở Riot Client và đăng nhập.");
-        
+        }
+
     }
 
 
