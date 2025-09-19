@@ -9,6 +9,20 @@ namespace ValoResTool.Services
 {
     public static class ConsoleHelper
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        public static void BringConsoleToFront()
+        {
+            IntPtr handle = GetConsoleWindow();
+            if (handle != IntPtr.Zero)
+            {
+                SetForegroundWindow(handle);
+            }
+        }
         private delegate bool ConsoleEventDelegate(int eventType);
         [DllImport("Kernel32")]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate handler, bool add);
@@ -28,5 +42,6 @@ namespace ValoResTool.Services
             });
             SetConsoleCtrlHandler(handler, true);
         }
+     
     }
 }
