@@ -45,21 +45,13 @@ namespace ValoResTool.Services
                     }
                 }
             }
-            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\MyTool"))
-            {
-                var savedPath = key?.GetValue("RiotExePath") as string;
-                if (!string.IsNullOrEmpty(savedPath) && File.Exists(savedPath))
-                {
-                    return savedPath;
-                }
-            }
 
 
             return null;
         }
 
         // 🔹 Lấy thông tin Riot Client từ log
-        public async Task<(int AppPort, string Token)?> GetRiotClientInfoAsync(int maxRetry = 10)
+        public async Task<(int AppPort, string Token)?> GetRiotClientInfoAsync(int maxRetry = 12)
         {
             string logFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -71,8 +63,8 @@ namespace ValoResTool.Services
                 var latestLog = files.OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
                 if (latestLog == null)
                 {
-                    Console.WriteLine("❌ Chưa tìm thấy log Riot Client. Đợi 10s...");
-                    await Task.Delay(10000);
+                    Console.WriteLine("❌ Chưa tìm thấy log Riot Client. Đợi 5s...");
+                    await Task.Delay(5000);
                     continue;
                 }
 
@@ -83,7 +75,7 @@ namespace ValoResTool.Services
                 if (portMatch.Success && tokenMatch.Success)
                     return (int.Parse(portMatch.Groups[1].Value), tokenMatch.Groups[1].Value);
 
-                await Task.Delay(10000);
+                await Task.Delay(15000);
             }
 
             Console.WriteLine("❌ Không lấy được thông tin Riot Client sau nhiều lần thử.");
@@ -133,18 +125,29 @@ namespace ValoResTool.Services
             handler.ServerCertificateCustomValidationCallback = (msg, cert, chain, errs) => true;
             using var client = new HttpClient(handler);
             client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authValue);
+                new AuthenticationHeaderValue("Basic", authValue);
 
             // POST để bật Valorant
-            var response = await client.PostAsync(
-                $"https://127.0.0.1:{appPort}/product-launcher/v1/products/valorant/patchlines/live",
-                null
-            );
+            var url = $"https://127.0.0.1:{appPort}/product-launcher/v1/products/valorant/patchlines/live";
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                var response = await client.PostAsync(url, null);
 
-            if (response.IsSuccessStatusCode)
-                Console.WriteLine("✅ Valorant đang được mở...");
-            else
-                Console.WriteLine($"❌ Lỗi khi bật Valorant: {response.StatusCode}");
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("✅ Valorant đang được mở...");
+                    return;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    Console.WriteLine("⚠ Valorant đang chạy hoặc đã được khởi động, bỏ qua.");
+                    return;
+                }
+
+                Console.WriteLine($"❌ Thử {attempt}: Lỗi khi bật Valorant: {response.StatusCode}");
+                await Task.Delay(3000);
+            }
         }
         // 🔹 Logout Riot Client
         public async Task<bool> LogoutRiotAsync()
@@ -203,7 +206,7 @@ namespace ValoResTool.Services
                 while (!Directory.Exists(subjectFolder))
                 {
                     Console.WriteLine("⏳ Đang chờ Valorant tạo thư mục account...");
-                    await Task.Delay(3000);
+                    await Task.Delay(5000);
                 }
 
                 // Tắt game bằng taskkill
@@ -229,8 +232,21 @@ namespace ValoResTool.Services
             // Nếu đang chạy ở bootstrap mode thì kill trước
             foreach (var p in Process.GetProcessesByName("RiotClientServices"))
             {
-                p.Kill();
-                p.WaitForExit();
+                try
+                {
+                    p.Kill();
+                    // Kiểm tra còn chạy không rồi mới WaitForExit
+                    if (!p.HasExited)
+                        p.WaitForExit(3000); // timeout 3 giây tránh treo
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process đã thoát trước khi gọi -> bỏ qua
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠ Không thể kill RiotClientServices: {ex.Message}");
+                }
             }
 
             Console.WriteLine("⚡ Đang khởi động Riot Client với UI đầy đủ...");

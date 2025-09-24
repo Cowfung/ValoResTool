@@ -34,6 +34,7 @@ var riotService = new RiotService();
 var configService = new ConfigService();
 var resolutionService = new ResolutionService(qresPath);
 
+
 // Biến dùng chung
 string baseConfig = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -44,41 +45,17 @@ bool running = true;
 ConsoleHelper.PreventClose(() =>
 {
     Console.WriteLine("👋 Tool đã thoát.");
-    KillRiotProcesses();
+    ProcessHelper.KillRiotProcesses();
     running = false;
 });
 
 AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 {
-    KillRiotProcesses();
+    ProcessHelper.KillRiotProcesses();
     running = false;
 };
-static void KillRiotProcesses()
-{
-    string[] riotProcesses =
-    {
-        "RiotClientServices",
-        "RiotClientUx",
-        "RiotClientUxRender",
-        "RiotClientElectron"
-    };
 
-    foreach (var p in riotProcesses)
-    {
-        foreach (var proc in Process.GetProcessesByName(p))
-        {
-            try
-            {
-                proc.Kill();
-                Console.WriteLine($"❌ Đã tắt {proc.ProcessName} (PID {proc.Id})");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠ Không thể kill {proc.ProcessName}: {ex.Message}");
-            }
-        }
-    }
-}
+
 
 while (running && !Environment.HasShutdownStarted)
 {
@@ -89,52 +66,19 @@ while (running && !Environment.HasShutdownStarted)
         Console.WriteLine("❌ Riot Client chưa được mở lần nào. Vui lòng mở Riot Client thủ công (chỉ cần mở một lần).");
         Console.WriteLine("⏳ Đang chờ bạn mở Riot Client...");
 
-        string[] riotProcesses =
-        {
-        "RiotClientServices",
-        "RiotClientUx",
-        "RiotClientUxRender",
-        "RiotClientElectron"
-    };
+      
 
         while (true)
         {
-            var proc = riotProcesses
+            var proc = ProcessHelper.RiotProcesses
                 .SelectMany(p => Process.GetProcessesByName(p))
                 .FirstOrDefault();
 
             if (proc != null)
             {
                 Console.WriteLine("✅ Riot Client đã được mở, tiếp tục...");
-
-                try
-                {
-                    // 🔑 Lấy exePath trực tiếp từ process thay vì registry
-                    riotExe = proc.MainModule?.FileName;
-                    if (!string.IsNullOrEmpty(riotExe))
-                    {
-                      
-                        try
-                        {
-                            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\MyTool"))
-                            {
-                                key.SetValue("RiotExePath", riotExe);
-                            }
-                           
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"⚠ Không lưu được RiotExePath: {ex.Message}");
-                        }
-                    }
-                }
-                catch
-                {
-                    Console.WriteLine("⚠ Không lấy được exePath từ process, sẽ chỉ dùng detect process.");
-                }
                 break;
             }
-
             await Task.Delay(2000);
         }
     }
@@ -143,15 +87,9 @@ while (running && !Environment.HasShutdownStarted)
     {
         try
         {
-            string[] riotProcesses =
-            {
-            "RiotClientServices",
-            "RiotClientUx",
-            "RiotClientUxRender",
-            "RiotClientElectron"
-        };
+        
 
-            bool riotRunning = riotProcesses.Any(p => Process.GetProcessesByName(p).Any());
+            bool riotRunning = ProcessHelper.RiotProcesses.Any(p => Process.GetProcessesByName(p).Any());
 
             if (!riotRunning)
             {
@@ -168,7 +106,7 @@ while (running && !Environment.HasShutdownStarted)
                     Console.WriteLine("⚠ Riot Client chạy nhưng chưa login, sẽ khởi động lại...");
 
                     // Kill toàn bộ process Riot Client
-                    foreach (var p in riotProcesses)
+                    foreach (var p in ProcessHelper.RiotProcesses)
                     {
                         foreach (var proc in Process.GetProcessesByName(p))
                             proc.Kill();
@@ -193,7 +131,7 @@ while (running && !Environment.HasShutdownStarted)
   
     string subject = await riotService.EnsureValorantAccountAsync(baseConfig);
     Console.WriteLine("🎉 Riot Client đã login & tài khoản Valorant đã sẵn sàng!");
-    Task.Delay(3000);
+    await Task.Delay(3000);
     ConsoleHelper.BringConsoleToFront();
     // Chọn độ phân giải
     // 🔹 Bước 2: Người dùng chọn độ phân giải

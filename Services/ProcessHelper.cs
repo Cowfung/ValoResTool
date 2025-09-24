@@ -33,5 +33,25 @@ namespace ValoResTool.Services
                 Console.WriteLine("⚠️ Không tắt được Valorant tự động, bạn có thể tắt thủ công.");
             }
         }
+        public static readonly string[] RiotProcesses = { "RiotClientServices", "RiotClientUx", "RiotClientUxRender", "RiotClientElectron" };
+
+        public static void KillRiotProcesses()
+        {
+            foreach (var p in RiotProcesses)
+            {
+                foreach (var proc in Process.GetProcessesByName(p))
+                {
+                    try
+                    {
+                        proc.Kill();
+                        Console.WriteLine($"❌ Đã tắt {proc.ProcessName} (PID {proc.Id})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"⚠ Không thể kill {proc.ProcessName}: {ex.Message}");
+                    }
+                }
+            }
+        }
     }
 }
