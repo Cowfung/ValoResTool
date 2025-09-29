@@ -47,7 +47,7 @@ namespace ValoResTool.Services
             };
         }
 
-        public static void ShowActionMenu(
+        public static async Task ShowActionMenu(
        string[] userFolders,
        string riotExe,
        RiotService riotService,
@@ -71,10 +71,10 @@ namespace ValoResTool.Services
                 {
                     ProcessHelper.KillValorant();
                     configService.UpdateConfig(iniTemplatePath, userFolders, resX, resY);
-                    var loginInfo = riotService.CheckRiotLoginAsync().Result;
+                    var loginInfo = await riotService.CheckRiotLoginAsync();
                     if (loginInfo != null)
                     {
-                        riotService.LaunchValorantAsync(loginInfo.AppPort, loginInfo.RemotingAuthToken).Wait();
+                      await riotService.LaunchValorantAsync(loginInfo.AppPort, loginInfo.RemotingAuthToken);
 
                         Console.WriteLine("✅ Valorant đã reset config & Riot Client đã mở lại.");
                     }
@@ -87,8 +87,28 @@ namespace ValoResTool.Services
                 else if (action == "2")
                 {
                     ProcessHelper.KillValorant();
-                    riotService.LogoutRiotAsync().Wait();
-                    Process.Start(riotExe);
+                    await riotService.LogoutRiotAsync();
+                    if (!string.IsNullOrEmpty(riotExe) && File.Exists(riotExe))
+                    {
+                        try
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = riotExe,
+                                UseShellExecute = true, // cho phép chạy file exe như click tay
+                                WorkingDirectory = Path.GetDirectoryName(riotExe) // quan trọng, Riot hay crash nếu thiếu
+                            });
+                            Console.WriteLine("✅ Đã mở lại Riot Client để đổi tài khoản.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"❌ Không thể mở Riot Client: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Không tìm thấy Riot Client exe. Hãy mở thủ công.");
+                    }
                     break; // quay lại vòng while ngoài
                 }
                 else if (action == "3")

@@ -190,7 +190,7 @@ while (running && !Environment.HasShutdownStarted)
 
 
 
-    MenuHelper.ShowActionMenu(
+    await MenuHelper.ShowActionMenu(
     userFolders,
     riotExe,
     riotService,

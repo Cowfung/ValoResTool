@@ -75,7 +75,7 @@ namespace ValoResTool.Services
                 if (portMatch.Success && tokenMatch.Success)
                     return (int.Parse(portMatch.Groups[1].Value), tokenMatch.Groups[1].Value);
 
-                await Task.Delay(15000);
+                await Task.Delay(5000);
             }
 
             Console.WriteLine("❌ Không lấy được thông tin Riot Client sau nhiều lần thử.");
@@ -113,7 +113,10 @@ namespace ValoResTool.Services
   
                 }
             }
-            catch { /* lỗi connect -> chưa login */ }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠ Không kết nối được Riot Client API: {ex.Message}");
+            }
 
             return null;
         }
@@ -179,7 +182,7 @@ namespace ValoResTool.Services
         public async Task<string> EnsureValorantAccountAsync(string baseConfig)
         {
             // Trước khi check login
-            EnsureRiotClientFullUI();
+            await EnsureRiotClientFullUI();
             RiotLoginInfo? loginInfo = null;
             while (loginInfo == null)
             {
@@ -220,7 +223,7 @@ namespace ValoResTool.Services
 
             return subject;
         }
-        private void EnsureRiotClientFullUI()
+        private async Task EnsureRiotClientFullUI()
         {
             var exePath = GetRiotClientExe();
             if (exePath == null)
@@ -257,7 +260,7 @@ namespace ValoResTool.Services
                 UseShellExecute = true
             });
 
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
         }
       
       
